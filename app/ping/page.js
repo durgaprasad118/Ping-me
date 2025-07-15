@@ -36,7 +36,6 @@ export default async function PingStatusPage() {
         return (
             <div className="min-h-screen bg-slate-900 p-6">
                 <div className="max-w-7xl mx-auto">
-                    {/* Header */}
                     <div className="text-center mb-8">
                         <h1 className="text-4xl font-bold text-white mb-2">Database Monitor</h1>
                         <p className="text-slate-400 mb-4">Real-time connectivity status</p>
@@ -46,7 +45,6 @@ export default async function PingStatusPage() {
                         </div>
                     </div>
 
-                    {/* Stats Overview */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                         <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
                             <div className="flex items-center justify-between">
@@ -91,7 +89,6 @@ export default async function PingStatusPage() {
                         </div>
                     </div>
 
-                    {/* Database Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {data.results.map((result, index) => (
                             <div
@@ -148,7 +145,6 @@ export default async function PingStatusPage() {
                         ))}
                     </div>
 
-                    {/* Footer */}
                     <div className="mt-8 text-center">
                         <div className="inline-flex items-center gap-2 bg-slate-800 rounded-full px-4 py-2 border border-slate-700">
                             <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

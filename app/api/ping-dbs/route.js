@@ -1,14 +1,12 @@
 import { NextResponse } from 'next/server';
 import { Client } from 'pg';
 
-// Array of database URLs from environment variables
 const dbUrls = [
     process.env.DB1_URL,
     process.env.DB2_URL,
     process.env.DB3_URL
-].filter(Boolean); // Remove any undefined URLs
+].filter(Boolean);
 
-// Corresponding database names
 const dbNames = [
     'Lockin',
     'Medium', 
@@ -17,7 +15,6 @@ const dbNames = [
 
 async function pingDb(url, name) {
     try {
-        // Parse the connection string manually
         const urlObj = new URL(url);
         
         const client = new Client({
@@ -25,10 +22,10 @@ async function pingDb(url, name) {
             password: urlObj.password,
             host: urlObj.hostname,
             port: urlObj.port,
-            database: urlObj.pathname.substring(1), // Remove leading slash
+            database: urlObj.pathname.substring(1),
             ssl: {
-                rejectUnauthorized: false, // Accept self-signed certificates
-                require: true // But still require SSL connection
+                rejectUnauthorized: false,
+                require: true
             }
         });
         
