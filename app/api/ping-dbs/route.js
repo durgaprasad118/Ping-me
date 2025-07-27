@@ -10,6 +10,25 @@ const dbUrls = [
 
 const dbNames = ['Lockin', 'Medium', 'TaskMaestro', 'Store components'];
 
+// Get selected tables from environment variables
+function getSelectedTables() {
+    return {
+        0: process.env.DB1_TABLE,
+        1: process.env.DB2_TABLE,
+        2: process.env.DB3_TABLE,
+        3: process.env.DB4_TABLE
+    };
+}
+
+// Save selected tables to environment variables (for reference)
+function saveSelectedTables(tables) {
+    console.log('✅ Selected tables to add to .env:');
+    Object.entries(tables).forEach(([index, table]) => {
+        console.log(`DB${parseInt(index) + 1}_TABLE=${table}`);
+    });
+    console.log('Add these lines to your .env file to persist table selection');
+}
+
 // Add timeout wrapper for database operations
 async function withTimeout(promise, timeoutMs = 10000) {
     return Promise.race([
@@ -23,7 +42,7 @@ async function withTimeout(promise, timeoutMs = 10000) {
     ]);
 }
 
-async function pingDb(url, name) {
+async function pingDb(url, name, dbIndex) {
     let client = null;
     try {
         const urlObj = new URL(url);
@@ -49,10 +68,68 @@ async function pingDb(url, name) {
         // Connect with timeout
         await withTimeout(client.connect(), 5000);
 
-        // Simple query with timeout
-        await withTimeout(client.query('SELECT 1;'), 3000);
+        // Get selected tables from environment
+        const selectedTables = getSelectedTables();
+        
+        // If we haven't selected a table for this database yet, get tables and select one
+        if (!selectedTables[dbIndex]) {
+            console.log(`No table selected for database ${name} (index: ${dbIndex}), getting tables...`);
+            
+            const tablesQuery = `
+                SELECT table_name 
+                FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_type = 'BASE TABLE'
+                ORDER BY table_name;
+            `;
+            
+            const tablesResult = await withTimeout(client.query(tablesQuery), 3000);
+            const tables = tablesResult.rows.map(row => row.table_name);
+            
+            console.log(`Available tables for ${name}:`, tables);
+            
+            if (tables.length === 0) {
+                return { 
+                    name, 
+                    status: 'success', 
+                    message: 'Connected successfully - No tables found',
+                    selectedTable: null,
+                    selectedItem: null
+                };
+            }
 
-        return { name, status: 'success', message: 'Connected successfully' };
+            // Select the first non-migration table, or fallback to first table
+            const nonMigrationTables = tables.filter(table => !table.startsWith('_'));
+            const tableToUse = nonMigrationTables.length > 0 ? nonMigrationTables[0] : tables[0];
+            selectedTables[dbIndex] = tableToUse;
+            
+            // Show what to add to .env
+            saveSelectedTables(selectedTables);
+            
+            console.log(`✅ SELECTED table '${tableToUse}' for database '${name}' (index: ${dbIndex})`);
+        } else {
+            console.log(`🔄 Using env table '${selectedTables[dbIndex]}' for database '${name}' (index: ${dbIndex})`);
+        }
+
+        const selectedTable = selectedTables[dbIndex];
+        
+        // Get 1 item from the selected table
+        const itemQuery = `
+            SELECT * FROM "${selectedTable}" 
+            ORDER BY RANDOM() 
+            LIMIT 1;
+        `;
+        
+        const itemResult = await withTimeout(client.query(itemQuery), 5000);
+        const selectedItem = itemResult.rows[0] || null;
+
+        return { 
+            name, 
+            status: 'success', 
+            message: 'Connected successfully and retrieved item from selected table',
+            selectedTable: selectedTable,
+            selectedItem: selectedItem
+        };
     } catch (error) {
         console.error(`Database ${name} ping failed:`, error.message);
         return {
@@ -95,7 +172,7 @@ export async function GET() {
 
         const results = await Promise.allSettled(
             dbUrls.map((url, index) =>
-                pingDb(url, dbNames[index] || `Database ${index + 1}`)
+                pingDb(url, dbNames[index] || `Database ${index + 1}`, index)
             )
         );
 
@@ -119,17 +196,26 @@ export async function GET() {
         ).length;
         const totalCount = processedResults.length;
 
+        // Calculate summary statistics
+        const successfulResults = processedResults.filter(r => r.status === 'success');
+        const itemsRetrieved = successfulResults.filter(r => r.selectedItem !== null).length;
+
+        // Get stored tables from environment
+        const storedTables = getSelectedTables();
+
         console.log(
-            `Database ping completed in ${executionTime}ms. ${successCount}/${totalCount} successful`
+            `Database ping completed in ${executionTime}ms. ${successCount}/${totalCount} successful. Retrieved ${itemsRetrieved} items.`
         );
 
         return NextResponse.json({
             ok: successCount > 0, // Consider successful if at least one DB responds
             results: processedResults,
+            storedTables: storedTables, // Show which tables are stored in env
             summary: {
                 total: totalCount,
                 successful: successCount,
                 failed: totalCount - successCount,
+                itemsRetrieved: itemsRetrieved,
                 executionTimeMs: executionTime
             },
             timestamp: new Date().toISOString()
