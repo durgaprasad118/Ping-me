@@ -184,10 +184,14 @@ export async function GET() {
     try {
         // Validate environment variables
         if (dbUrls.length === 0) {
+            console.error('❌ No database URLs configured in environment variables');
+            console.error('Required environment variables: DB1_URL, DB2_URL, DB3_URL, DB4_URL, DB5_URL, DB6_URL');
+            
             return NextResponse.json(
                 {
                     ok: false,
-                    error: 'No database URLs configured',
+                    error: 'No database URLs configured. Please set DB1_URL, DB2_URL, etc. environment variables.',
+                    missingEnvVars: ['DB1_URL', 'DB2_URL', 'DB3_URL', 'DB4_URL', 'DB5_URL', 'DB6_URL'],
                     timestamp: new Date().toISOString()
                 },
                 { status: 500 }
