@@ -6,10 +6,18 @@ const dbUrls = [
     process.env.DB2_URL,
     process.env.DB3_URL,
     process.env.DB4_URL,
-    process.env.DB5_URL
+    process.env.DB5_URL,
+    process.env.DB6_URL
 ].filter(Boolean);
 
-const dbNames = ['Lockin', 'Medium', 'TaskMaestro', 'Store components', 'Visitors'];
+const dbNames = [
+    'Lockin',
+    'Medium',
+    'TaskMaestro',
+    'Store components',
+    'Visitors',
+    'Map Pin'
+];
 
 // Get selected tables from environment variables
 function getSelectedTables() {
@@ -18,7 +26,8 @@ function getSelectedTables() {
         1: process.env.DB2_TABLE,
         2: process.env.DB3_TABLE,
         3: process.env.DB4_TABLE,
-        4: process.env.DB5_TABLE
+        4: process.env.DB5_TABLE,
+        5: process.env.DB6_TABLE
     };
 }
 
